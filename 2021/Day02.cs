@@ -2,59 +2,101 @@
 
 public class Day02
 {
-    public static async Task Part1()
+    private Position _position { get; set; } = new();
+    private IEnumerable<Movement> _movements { get; set; } = Enumerable.Empty<Movement>();
+    private async Task _part1()
     {
-        Position position = new();
-        IEnumerable<Movement> movements = await _getMovements();
-        foreach (var move in movements) position.Move(move);
-        position.ProductOfCoordinates(); 
+        _movements = await _getMovements();
+        foreach (var move in _movements) _position.Move(move);
+        WriteLine("Day2-1");
+        _position.ProductOfCoordinates(); 
+    }
+    private void _part2()
+    {
+        _position.Reset();
+        foreach (var move in _movements) _position.Move(move, useAim: true);
+        WriteLine("Day2-2");
+        _position.ProductOfCoordinates();
     }
 
+    public async Task SolvePuzzles()
+    {
+        await _part1();
+        _part2();
+    }
 
-    private static async Task<IEnumerable<Movement>> _getMovements()
+    private async Task<IEnumerable<Movement>> _getMovements()
     {
         var input = await Files.ReadAsync("Input/day02.txt");
-        var data = input.Split("\n")
+        return input.Split("\n")
             .Select(s => s.Split(" ", 2))
             .Select(s => new Movement {
-                Length = int.Parse(s[1]),
+                Units = int.Parse(s[1]),
                 Direction = s[0] == "up" ? Direction.Up
                     : s[0] == "down" ? Direction.Down
                         : Direction.Forward
             });
-        return data;
     }
 
     public enum Direction
     {
-        Forward,
         Up,
-        Down
+        Down,
+        Forward
     }
 
     public class Movement
     {
         public Direction Direction { get; set; }
-        public int Length { get; set; }
+        public int Units { get; set; }
     }
 
     public class Position
     {
-        public int Horizontal { get; set; }
-        public int Depth { get; set; }
-        public void Move(Movement movement)
+        private int _horizontal { get; set; }
+        private int _depth { get; set; }
+        private int _aim { get; set; }
+        
+        public void Move(Movement movement, bool useAim = false)
         {
-            int length = movement.Length;
+            int units = movement.Units;
             switch (movement.Direction)
             {
-                case Direction.Forward: Horizontal += length; break;
-                case Direction.Up: Depth -= length; break;
-                case Direction.Down: Depth += length; break;
+                case Direction.Forward:
+                    _horizontal += units;
+                    if (useAim)
+                    {
+                        _depth += (_aim * units);
+                    }
+                    break;
+
+                case Direction.Up:
+                    _depth -= units;
+                    if (useAim)
+                    {
+                        _aim -= units;
+                    }
+                    break;
+
+                case Direction.Down:
+                    _depth += units;
+                    if (useAim)
+                    {
+                        _aim += units;
+                    }
+                    break;
 
                 default: throw new ArgumentOutOfRangeException(nameof(movement.Direction));
             }
         }
-        public void WhereAt() => WriteLine(Serialize(new { Horizontal, Depth }));
-        public void ProductOfCoordinates() => WriteLine($"Horizontal x Vertical = {Horizontal} x {Depth} = {Horizontal * Depth}");
+        
+        public void Reset()
+        {
+            _aim = 0;
+            _depth = 0;  
+            _horizontal = 0;
+        }
+        
+        public void ProductOfCoordinates() => WriteLine($"Horizontal x Vertical = {_horizontal} x {_depth} = {_horizontal * _depth}");
     }
 }
